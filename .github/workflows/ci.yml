@@ -189,6 +189,9 @@ jobs:
       - name: Audit npm dependencies
         run: npm audit --audit-level=high
 
+      - name: Refresh ephemeral derived sources for tests
+        run: npm run plugin-compat:sync && npm run bundles:sync && npm run index
+
       - name: Run tests
         run: npm run test
 
