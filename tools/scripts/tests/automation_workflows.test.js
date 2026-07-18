@@ -11,6 +11,7 @@ function readText(relativePath) {
 const packageJson = JSON.parse(readText("package.json"));
 const generatedFiles = JSON.parse(readText("tools/config/generated-files.json"));
 const ciWorkflow = readText(".github/workflows/ci.yml");
+const offlineCatalogBuilder = readText("tools/scripts/build-aas-v1-offline-catalog.js");
 const canonicalMergeScript = readText("tools/scripts/merge_canonical_sync_pr.cjs");
 const publishWorkflow = readText(".github/workflows/publish-npm.yml");
 const releaseWorkflowScript = readText("tools/scripts/release_workflow.js");
@@ -157,6 +158,23 @@ assert.match(
   ciWorkflow,
   /source-validation:[\s\S]*?- uses: actions\/checkout@[a-f0-9]{40}[\s\S]*?with:[\s\S]*?fetch-depth: 0/,
   "source-validation should use an unshallowed checkout so base-branch diffs have a merge base",
+);
+
+const pagesWorkflow = readText(".github/workflows/pages.yml");
+assert.match(
+  pagesWorkflow,
+  /- name: Checkout[\s\S]*?uses: actions\/checkout@[a-f0-9]{40}[\s\S]*?with:[\s\S]*?fetch-depth: 0[\s\S]*?persist-credentials: false/,
+  "Pages should use an unshallowed, credential-free checkout because canonical provenance validation reads git history",
+);
+assert.match(
+  ciWorkflow,
+  /artifact-preview:[\s\S]*?actions\/checkout@[a-f0-9]{40}[\s\S]*?fetch-depth: 0[\s\S]*?persist-credentials: false/,
+  "artifact-preview should retain history because canonical provenance generation reads git history",
+);
+assert.match(
+  offlineCatalogBuilder,
+  /if \(!check\)[\s\S]*?buildMetadataOverrides\(\)[\s\S]*?fs\.writeFileSync[\s\S]*?buildArtifacts\(\)/,
+  "offline catalog builds should refresh metadata overrides before binding them into the catalog manifest",
 );
 assert.match(
   ciWorkflow,
